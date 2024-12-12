@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker</title>
+  <style>
+   /* General Styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #7A6AA9;
+  color: rebeccapurple;
+}
+
+.container {
+  max-width: 100%;
+  margin: 10px auto;
+  padding: 15px;
+  background: #E0BBE4;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+header {
+  text-align: center;
+  font-size: 22px;
+  margin-top: -30px;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-weight: bolder;
+}
+
+h2 {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+/* Task Form */
+.task-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  background-color: #E0BBE4;
+}
+
+.task-form input,
+.task-form button {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.task-form input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.task-form button {
+  background-color: rebeccapurple;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.task-form button:hover {
+  background-color: #5d499e;
+}
+
+/* Tasks Container */
+#tasks-container {
+  padding: 10px;
+  font-size: 16px;
+}
+
+/* Task Item */
+.task {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.task div:first-child {
+  flex: 1;
+}
+
+.task .time-remaining {
+  color: red;
+  white-space: nowrap;
+}
+
+.task button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  color: white;
+}
+
+.task button.complete-btn {
+  background-color: #5d499e;
+}
+
+.task button.delete-btn {
+  background-color: rebeccapurple;
+}
+
+.task button:hover {
+  opacity: 0.9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .task-form {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .task-form input,
+  .task-form button {
+    width: 100%;
+  }
+
+  .task {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task .time-remaining {
+    margin-top: 5px;
+  }
+
+  .task button {
+    width: 100%;
+    margin-top: 5px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Task Tracker</h1>
+    </header>
+
+    <section class="task-form">
+      <input type="text" id="task-subject" placeholder="Subject" required>
+      <input type="text" id="task-name" placeholder="Task Name" required>
+      <input type="datetime-local" id="task-deadline" required>
+      <button id="add-task">Add Task</button>
+    </section>
+
+    <h2>TO-DO LIST</h2>
+    <div id="tasks-container">
+      <p>No tasks yet. Add some above!</p>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const taskSubjectInput = document.getElementById("task-subject");
+    const taskNameInput = document.getElementById("task-name");
+    const taskDeadlineInput = document.getElementById("task-deadline");
+    const addTaskBtn = document.getElementById("add-task");
+    const tasksContainer = document.getElementById("tasks-container");
+
+    // Load tasks from localStorage
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    renderTasks();
+
+    // Add a new task
+    addTaskBtn.addEventListener("click", () => {
+      const subject = taskSubjectInput.value.trim();
+      const name = taskNameInput.value.trim();
+      const deadline = taskDeadlineInput.value;
+
+      if (!subject || !name || !deadline) {
+        alert("Please fill out all fields.");
+        return;
+      }
+
+      const newTask = {
+        id: Date.now(),
+        subject,
+        name,
+        deadline,
+        completed: false,
+      };
+
+      tasks.push(newTask);
+      saveTasks();
+      renderTasks();
+
+      // Clear input fields
+      taskSubjectInput.value = "";
+      taskNameInput.value = "";
+      taskDeadlineInput.value = "";
+    });
+
+    // Render tasks to the dashboard
+    function renderTasks() {
+      tasksContainer.innerHTML = "";
+
+      if (tasks.length === 0) {
+        tasksContainer.innerHTML = "<p>No tasks yet. Add some above!</p>";
+        return;
+      }
+
+      // Sort tasks by the time remaining
+      tasks.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+      tasks.forEach((task) => {
+        const taskElement = document.createElement("div");
+        const isNearDeadline =
+          new Date(task.deadline) - new Date() < 24 * 60 * 60 * 1000 && !task.completed;
+
+        const timeLeft =
+          Math.max(0, Math.round((new Date(task.deadline) - new Date()) / (1000 * 60 * 60))) || "<1";
+
+        taskElement.className = `task ${task.completed ? "completed" : ""} ${
+          isNearDeadline ? "near-deadline" : ""
+        }`;
+
+        taskElement.innerHTML = `
+          <div>
+            <strong>${task.subject}</strong>: ${task.name}<br>
+            <small>Deadline: ${new Date(task.deadline).toLocaleString()}</small>
+          </div>
+          <div class="time-remaining">
+            ${timeLeft}h left
+          </div>
+          <div>
+            <button class="complete-btn" onclick="toggleTaskCompletion(${task.id}, ${
+          !task.completed
+        })">${task.completed ? "Undo" : "Done"}</button>
+            <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+          </div>
+        `;
+
+        tasksContainer.appendChild(taskElement);
+      });
+    }
+
+    // Save tasks to localStorage
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // Toggle task completion
+    function toggleTaskCompletion(taskId, completed) {
+      tasks = tasks.map((task) =>
+        task.id === taskId ? { ...task, completed } : task
+      );
+      saveTasks();
+      renderTasks();
+    }
+
+    // Delete a task
+    function deleteTask(taskId) {
+      tasks = tasks.filter((task) => task.id !== taskId);
+      saveTasks();
+      renderTasks();
+    }
+  </script>
+</body>
+</html>
